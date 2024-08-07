@@ -26,6 +26,7 @@ private:
 public:
     Matrix();
     Matrix(size_t _rows, size_t _columns);
+    Matrix(size_t _rows, size_t _columns, double values);
     Matrix(const Matrix &_m);
     Matrix(Matrix &&rMatrix) noexcept;
     ~Matrix();
@@ -44,6 +45,7 @@ public:
 
     Matrix getMinor(int r, int c) const;
     Matrix concatRight(Matrix &B) const;
+    Matrix concatLeft(Matrix &B) const;
     Matrix inverse() const;
 
     void setElement(size_t r, size_t c, double value);

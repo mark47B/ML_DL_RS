@@ -173,8 +173,8 @@ Matrix&  Matrix::randomise(){
 
 
 Matrix  Matrix::inverse() const {
-
-    return *this;
+    double determinant_this = this->det();
+    return this->AlgebraicComplements() / determinant_this;
 }
 
 Matrix Matrix::getMinor(int r, int c) const {
@@ -264,5 +264,33 @@ Matrix Matrix::operator/(const double m) {
     }
 
     return tmp;
+}
+
+Matrix::Matrix(size_t _rows, size_t _columns, double values)  : rows(_rows), columns(_columns), data{(double **) new double* [_rows]} {
+    for (size_t i = 0; i < rows; i++) {
+        data[i] = (double *) new double[columns];
+        for (size_t j = 0; j < columns; ++j) {
+            data[i][j] = values;
+        }
+    }
+}
+
+Matrix Matrix::concatLeft(Matrix &B) const {
+    if (B.rows != this->rows){
+        throw std::logic_error("Concat of matrices with different number of rows");
+    }
+
+    Matrix A(this->rows, columns + B.columns); // Создаём матрицу размера m x (n + B.n)
+    for (size_t i = 0; i < rows; ++i) { // Записываем исходную матрицу в A
+        for (size_t j = 0; j < B.columns; ++j) {
+            A.setElement(i, j, B.getElement(i, j));
+        }
+    }
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = B.columns; j < B.columns + columns; ++j) {
+            A.setElement(i, j, data[i][j]);
+        }
+    }
+    return A;
 }
 
