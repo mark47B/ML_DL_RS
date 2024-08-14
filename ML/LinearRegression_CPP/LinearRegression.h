@@ -5,6 +5,7 @@
 #ifndef LINEARREGRESSION_CPP_LINEARREGRESSION_H
 #define LINEARREGRESSION_CPP_LINEARREGRESSION_H
 #include "Matrix.h"
+#include <utility>
 #include <vector>
 #include <cmath>
 
@@ -18,19 +19,32 @@ private:
     vector<std::string> featureNames;
 
     Matrix mnk();
-    void gd(double learningRate=0.1);
-
-    double MSE();
-    double MAE();
-
+    void sgd(double learningRate=0.9, int epoch = 1000, size_t batch_size = 32);
 
 public:
 
+    enum TrainingMethods{
+        GradientDecent, // SGD
+        LeastSquares // МНК
+    };
+
     LinearRegression(Matrix& _X, Matrix& _Y);
-    void fit();
-    double predict(Matrix& _X);
+    LinearRegression(Matrix& _X, Matrix& _Y, Matrix& coefficients);
+
+    void setFeatureNames( vector<std::string> _featureNames){
+        featureNames = std::move(_featureNames);
+    }
+
+    Matrix getCoefficients();
+
+    void fit(LinearRegression::TrainingMethods method);
+    Matrix predict(Matrix& _X) const;
+    Matrix predict_without_bias(Matrix& _X) const;
 
 
+    double predict(vector<double> x) const;
+
+    double predict(const double *x, size_t size_x) const;
 };
 
 class RegressionMetrics{
