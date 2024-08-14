@@ -5,8 +5,11 @@
 #include "Matrix.h"
 
 Matrix::Matrix(size_t _rows, size_t _columns) : rows(_rows), columns(_columns), data{(double **) new double* [_rows]}{
-    for (int i = 0; i < rows; i++) {
+    for (size_t i = 0; i < rows; i++) {
         data[i] = (double *) new double[columns];
+        for (size_t j = 0; j < columns; ++j) {
+            data[i][j] = 0;
+        }
     }
 }
 
@@ -42,7 +45,7 @@ Matrix::~Matrix(){
 }
 
 [[nodiscard]] double  Matrix::getElement(size_t r, size_t c) const {
-    if (r < rows && c < columns)
+    if ((data != nullptr) && r < rows && c < columns)
         return data[r][c];
     else
         throw std::out_of_range("out of matrix range");
@@ -138,7 +141,7 @@ Matrix& Matrix::operator=(Matrix &&m) noexcept {
     return *this;
 }
 
-Matrix  Matrix::operator+(Matrix &m) {
+Matrix  Matrix::operator+(Matrix &m) const {
     if (this->rows != m.rows || this->columns != m.columns)
         throw std::logic_error("e: Addition of matrices with different dimensions");
 
@@ -152,7 +155,8 @@ Matrix  Matrix::operator+(Matrix &m) {
     return tmp;
 }
 Matrix&  Matrix::transpose(){
-    Matrix tmp(rows, columns);
+    Matrix tmp(columns, rows);
+
     for (size_t i = 0; i < columns; ++i) {
         for (size_t j = 0; j < rows; ++j) {
             tmp.setElement(i, j, data[j][i]);
@@ -162,10 +166,10 @@ Matrix&  Matrix::transpose(){
     return *this;
 }
 
-Matrix&  Matrix::randomise(){
+Matrix&  Matrix::randomise(unsigned factor){
     for (size_t i = 0; i < rows; ++i) {
         for (size_t j = 0; j < columns; ++j) {
-            data[i][j] = rand()%1000;
+            data[i][j] = rand()%factor;
         }
     }
     return *this;
@@ -207,7 +211,8 @@ double Matrix::det() const {
     if (columns == 2) {
         return data[0][0] * data[1][1] - data[0][1] * data[1][0];
     }
-    double sum(0);
+    double sum = 0;
+
     for (int i = 0; i < columns; ++i) {
         sum += pow(-1.0, 0 + i) * data[0][i] * ((this->getMinor(0, i)).det());
     }
@@ -226,9 +231,9 @@ Matrix Matrix::AlgebraicComplements() const {
     return tmp_ag;
 }
 
-Matrix Matrix::operator-(const Matrix &m) {
+Matrix Matrix::operator-(const Matrix &m) const{
     if (this->rows != m.rows || this->columns != m.columns)
-        throw std::logic_error("e: Addition of matrices with different dimensions");
+        throw std::logic_error("Addition of matrices with different dimensions");
 
     Matrix tmp(rows, columns);
     for (size_t i = 0; i < rows ; i++) {
@@ -240,14 +245,14 @@ Matrix Matrix::operator-(const Matrix &m) {
     return tmp;
 }
 
-Matrix Matrix::operator*(const Matrix &right) {
+Matrix Matrix::operator*(const Matrix &right) const {
     Matrix tmp(rows, right.columns);
     if (columns != right.rows) {
         throw std::logic_error("To multiply matrices, the number of columns of the left matrix must be equal to the number of rows of the right matrix ");
     }
     for (size_t i = 0; i < rows; ++i) {
-        for (size_t j = 0; j < columns; ++j) {
-            for (size_t r = 0; r < columns; ++r) {
+        for (size_t j = 0; j < right.columns; ++j) {
+            for (size_t r = 0; r < right.rows; ++r) {
                 tmp.setElement(i, j, tmp.getElement(i, j) + data[i][r] * right.data[r][j]);
             }
         }
@@ -255,18 +260,18 @@ Matrix Matrix::operator*(const Matrix &right) {
     return tmp;
 }
 
-Matrix Matrix::operator/(const double m) {
+Matrix Matrix::operator/(const double factor) const {
     Matrix tmp(rows, columns);
     for (size_t i = 0; i < rows ; i++) {
         for (size_t j = 0; j < columns; ++j) {
-            tmp.setElement(i, j, data[i][j] / m);
+            tmp.setElement(i, j, data[i][j] / factor);
         }
     }
 
     return tmp;
 }
 
-Matrix::Matrix(size_t _rows, size_t _columns, double values)  : rows(_rows), columns(_columns), data{(double **) new double* [_rows]} {
+Matrix::Matrix(size_t _rows, size_t _columns, double values)  : rows(_rows), columns(_columns), data((double **) new double* [_rows]) {
     for (size_t i = 0; i < rows; i++) {
         data[i] = (double *) new double[columns];
         for (size_t j = 0; j < columns; ++j) {
@@ -294,3 +299,103 @@ Matrix Matrix::concatLeft(Matrix &B) const {
     return A;
 }
 
+Matrix::Matrix(const vector<vector<double>> &_m) : rows(_m.size()), columns(_m[0].size()), data((double **) new double* [_m.size()]){
+    for (size_t i = 0; i < rows; i++) {
+        data[i] = (double *) new double[columns];
+        for (size_t j = 0; j < columns; ++j) {
+            data[i][j] = _m[i][j];
+        }
+    }
+
+}
+
+Matrix::Matrix() : rows(0), columns(0), data(nullptr) {
+
+}
+
+Matrix::Matrix(const vector<double> &_v) : rows(_v.size()), columns(1), data( (double**) new double*[_v.size()]){
+    for (size_t i = 0; i < rows; ++i) {
+        data[i] = (double *) new double[columns];
+        data[i][0] = _v[i];
+    }
+}
+
+Matrix::Matrix(const map<std::string, vector<double>> _map) : rows(_map.begin()->second.size()), columns(_map.size()), data((double **) new double* [_map.begin()->second.size()]) {
+
+    for (size_t i = 0; i < rows; ++i) {
+        data[i] = (double *) new double[columns];
+    }
+
+    auto it = _map.begin();
+    for (int i = 0; i < columns ; ++i) {
+        if (it->second.size() != rows)
+            throw std::range_error("Map has vectors with different size!");
+
+        for (size_t j = 0; j < rows; ++j) {
+            data[j][i] = it->second[j];
+        }
+        ++it;
+    }
+}
+
+Matrix Matrix::getRow(size_t r) const {
+    if (r >= rows)
+        throw std::range_error(" ");
+    Matrix tmp(1, columns);
+    for (int i = 0; i < columns; ++i) {
+        tmp.setElement(0, i, data[r][i]);
+    }
+    return tmp;
+}
+
+Matrix Matrix::getRows(size_t from, size_t count) const {
+    if (from + count >= rows)
+        throw std::range_error(" ");
+    Matrix tmp(count, columns);
+    for (int i = 0; i < count; ++i) {
+        for (int j = 0; j < columns; ++j) {
+            tmp.setElement(i, j, data[from + i][j]);
+        }
+    }
+    return tmp;
+}
+
+Matrix Matrix::operator*(const double right) const {
+    Matrix tmp = *this;
+    for (size_t i = 0; i < rows; ++i) {
+        for (size_t j = 0; j < columns; ++j) {
+            tmp.setElement(i, j, tmp.getElement(i, j)*right);
+        }
+    }
+    return tmp;
+}
+
+Matrix &Matrix::normalize() {
+    for (size_t j = 0; j < columns; ++j) {
+        double mean = 0.0;
+        double max_val = 0.0;
+//        double sd = 0.0;
+
+        for (size_t i = 0; i < rows; ++i) {
+            mean += data[i][j];
+            if (data[i][j] > max_val) max_val = data[i][j];
+        }
+        mean /= (double)rows;
+//
+//        for  (size_t i = 0; i < rows; ++i) {
+//            sd += pow(data[i][j] - mean, 2);
+//        }
+
+//        sd = sqrt(sd/((double)rows-1));
+
+        for (size_t i = 0; i < rows; ++i) {
+            data[i][j] = (data[i][j] - mean) / max_val;
+        }
+    }
+    return *this;
+}
+
+
+Matrix operator*(double val, const Matrix& M){
+    return M * val;
+}
